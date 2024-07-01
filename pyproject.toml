@@ -6,13 +6,15 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = 'nomad-networkx'
-description = 'Utility tool to map NetworkX graph representations into NOMAD workflow data models.'
+name = 'nomad-simulation-workflow-utilities'
+description = 'Utilities for interfacing with NOMAD within simulation workflows, including python API functions for uploading to NOMAD and querying the repository as well as automated generation of NOMAD custom workflow yaml files.'
 authors = [
-    { name = "Jose M. Pizarro", email = "jose.pizarro@physik.hu-berlin.de" }
+    { name = "Jose M. Pizarro", email = "jose.pizarro@physik.hu-berlin.de" },
+    { name = "Joseph F. Rudzinski", email = "joseph.rudzinski@physik.hu-berlin.de" }
 ]
 maintainers = [
-    { name = "Jose M. Pizarro", email = "jose.pizarro@physik.hu-berlin.de" }
+    { name = "Jose M. Pizarro", email = "jose.pizarro@physik.hu-berlin.de" },
+    { name = "Joseph F. Rudzinski", email = "joseph.rudzinski@physik.hu-berlin.de" }
 ]
 dynamic = ["version"]
 license = { file = "LICENSE" }
@@ -22,12 +24,26 @@ dependencies = [
     "nomad-lab@git+https://github.com/nomad-coe/nomad.git@develop",
     "nomad-schema-plugin-simulation-workflow@git+https://github.com/nomad-coe/nomad-schema-plugin-simulation-workflow.git@develop",
     "networkx",
+    "numpy>=1.25.0,<2.0.0",
+    "regex",
+    "pymbar>=4.0.1",
+    "jupyter>=1.0.0",
+    "jupyterlab",
+    "h5py",
+    "networkx",
+    "confuse",
+    "python-decouple",
+    "marshmallow-dataclass>=8.6.0",
+    "cachetools>=5.3.2",
+    "isort>=5.8.0",
+    "insane>=1.2.0",
+    "anyio>=3.0.0,<4.0",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/JosePizarro3/nomad-networkx"
-"Bug Tracker" = "https://github.com/JosePizarro3/nomad-networkx/issues"
-"Documentation" = "https://josepizarro3.github.io/nomad-networkx/"
+"Homepage" = "https://github.com/FAIRmat-NFDI/nomad-simulation-workflow-utilities"
+"Bug Tracker" = "https://github.com/FAIRmat-NFDI/nomad-simulation-workflow-utilities/issues"
+"Documentation" = "https://FAIRmat-NFDI.github.io/nomad-simulation-workflow-utilities/"
 
 [project.optional-dependencies]
 dev = [
@@ -41,7 +57,7 @@ dev = [
 ]
 
 [tool.ruff]
-include = ["src/nomad_networkx/*.py", "tests/*.py"]
+include = ["src/nomad_simulation_workflow_utilities/*.py", "tests/*.py"]
 lint.select = [
     "E", # pycodestyle
     "W", # pycodestyle
