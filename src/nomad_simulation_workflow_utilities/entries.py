@@ -14,10 +14,14 @@ from marshmallow_dataclass import class_schema, dataclass
 # from signac.job import Job
 
 # from martignac import config
-from nomad_networkx.datasets import NomadDataset
-from nomad_networkx.uploads import get_all_my_uploads
-from nomad_networkx.users import NomadUser, get_user_by_id
-from nomad_networkx.utils import get_nomad_base_url, get_nomad_request, post_nomad_request
+from nomad_simulation_workflow_utilities.datasets import NomadDataset
+from nomad_simulation_workflow_utilities.uploads import get_all_my_uploads
+from nomad_simulation_workflow_utilities.users import NomadUser, get_user_by_id
+from nomad_simulation_workflow_utilities.utils import (
+    get_nomad_base_url,
+    get_nomad_request,
+    post_nomad_request,
+)
 # from martignac.utils.martini_flow_projects import MartiniFlowProject
 # from martignac.utils.misc import update_nested_dict
 
@@ -39,13 +43,22 @@ class NomadEntrySchema(Schema):
     #     unknown = EXCLUDE
     @pre_load
     def convert_users(self, data, **kwargs):
-        data["main_author"] = get_user_by_id(user_id=data["main_author"]["user_id"]).as_dict()
-        data["writers"] = [get_user_by_id(user_id=w["user_id"]).as_dict() for w in data["writers"]]
-        data["authors"] = [get_user_by_id(user_id=a["user_id"]).as_dict() for a in data["authors"]]
-        data["viewers"] = [get_user_by_id(user_id=v["user_id"]).as_dict() for v in data["viewers"]]
+        data['main_author'] = get_user_by_id(
+            user_id=data['main_author']['user_id']
+        ).as_dict()
+        data['writers'] = [
+            get_user_by_id(user_id=w['user_id']).as_dict() for w in data['writers']
+        ]
+        data['authors'] = [
+            get_user_by_id(user_id=a['user_id']).as_dict() for a in data['authors']
+        ]
+        data['viewers'] = [
+            get_user_by_id(user_id=v['user_id']).as_dict() for v in data['viewers']
+        ]
         return data
 
-#? Should we just make these all optional to avoid the get functions breaking?
+
+# ? Should we just make these all optional to avoid the get functions breaking?
 @dataclass(frozen=True)
 class NomadEntry:
     entry_id: str
@@ -99,62 +112,81 @@ class NomadEntry:
     def nomad_gui_url(self) -> str:
         if self.base_url is None:
             raise ValueError(f"missing attribute 'use_prod' for entry {self}")
-        return f"{self.base_url}/gui/user/uploads/upload/id/{self.upload_id}/entry/id/{self.entry_id}"
+        return f'{self.base_url}/gui/user/uploads/upload/id/{self.upload_id}/entry/id/{self.entry_id}'
 
     @property
     def job_id(self) -> Optional[str]:
-        return self._comment_dict.get("job_id", None)
+        return self._comment_dict.get('job_id', None)
 
     @property
     def workflow_name(self) -> Optional[str]:
-        return self._comment_dict.get("workflow_name", None)
+        return self._comment_dict.get('workflow_name', None)
 
     @property
     def state_point(self) -> dict:
-        return self._comment_dict.get("state_point", {})
+        return self._comment_dict.get('state_point', {})
 
     @property
     def mdp_files(self) -> Optional[str]:
-        return self._comment_dict.get("mdp_files", None)
+        return self._comment_dict.get('mdp_files', None)
 
     @property
     def _comment_dict(self) -> dict:
-        return json.loads(self.comment or "{}")
+        return json.loads(self.comment or '{}')
 
 
 @ttl_cache(maxsize=128, ttl=180)
 def get_entry_by_id(
-    entry_id: str, use_prod: bool = True, with_authentication: bool = False, timeout_in_sec: int = 10
+    entry_id: str,
+    use_prod: bool = True,
+    with_authentication: bool = False,
+    timeout_in_sec: int = 10,
 ) -> NomadEntry:
-    logger.info(f"retrieving entry {entry_id} on {'prod' if use_prod else 'test'} server")
+    logger.info(
+        f"retrieving entry {entry_id} on {'prod' if use_prod else 'test'} server"
+    )
     response = get_nomad_request(
-        f"/entries/{entry_id}",
+        f'/entries/{entry_id}',
         with_authentication=with_authentication,
         use_prod=use_prod,
         timeout_in_sec=timeout_in_sec,
     )
     nomad_entry_schema = class_schema(NomadEntry, base_schema=NomadEntrySchema)
-    return nomad_entry_schema().load({**response["data"], "use_prod": use_prod})
+    return nomad_entry_schema().load({**response['data'], 'use_prod': use_prod})
 
 
 @ttl_cache(maxsize=128, ttl=180)
-def get_entries_of_upload(upload_id: str, use_prod: bool = False, with_authentication: bool = False, timeout_in_sec: int = 10) -> list[NomadEntry]:
-    logger.info(f"retrieving entries for upload {upload_id} on {'prod' if use_prod else 'test'} server")
+def get_entries_of_upload(
+    upload_id: str,
+    use_prod: bool = False,
+    with_authentication: bool = False,
+    timeout_in_sec: int = 10,
+) -> list[NomadEntry]:
+    logger.info(
+        f"retrieving entries for upload {upload_id} on {'prod' if use_prod else 'test'} server"
+    )
     response = get_nomad_request(
-        f"/uploads/{upload_id}/entries",
+        f'/uploads/{upload_id}/entries',
         with_authentication=with_authentication,
         use_prod=use_prod,
         timeout_in_sec=timeout_in_sec,
     )
     nomad_entry_schema = class_schema(NomadEntry, base_schema=NomadEntrySchema)
-    return [nomad_entry_schema().load({**r["entry_metadata"], "use_prod": use_prod}) for r in response["data"]]
+    return [
+        nomad_entry_schema().load({**r['entry_metadata'], 'use_prod': use_prod})
+        for r in response['data']
+    ]
 
 
-def get_entries_of_my_uploads(use_prod: bool = False, timeout_in_sec: int = 10) -> list[NomadEntry]:
+def get_entries_of_my_uploads(
+    use_prod: bool = False, timeout_in_sec: int = 10
+) -> list[NomadEntry]:
     return [
         upload_entry
         for u in get_all_my_uploads(use_prod=use_prod, timeout_in_sec=timeout_in_sec)
-        for upload_entry in get_entries_of_upload(u.upload_id, with_authentication=True, use_prod=use_prod)
+        for upload_entry in get_entries_of_upload(
+            u.upload_id, with_authentication=True, use_prod=use_prod
+        )
     ]
 
 
@@ -173,25 +205,29 @@ def query_entries(
     use_prod: bool = True,
 ) -> list[NomadEntry]:
     json_dict = {
-        "query": {},
-        "pagination": {"page_size": page_size},
-        "required": {"include": ["entry_id"]},
+        'query': {},
+        'pagination': {'page_size': page_size},
+        'required': {'include': ['entry_id']},
     }
     entries = []
     while (max_entries > 0 and len(entries) <= max_entries) or (max_entries < 0):
         if dataset_id:
-            json_dict["query"]["datasets"] = {"dataset_id": dataset_id}
+            json_dict['query']['datasets'] = {'dataset_id': dataset_id}
         if worfklow_name:
-            json_dict["query"]["results.method"] = {"workflow_name": worfklow_name}
+            json_dict['query']['results.method'] = {'workflow_name': worfklow_name}
         if program_name:
-            json_dict["query"]["results.method"] = {"simulation": {"program_name": program_name}}
+            json_dict['query']['results.method'] = {
+                'simulation': {'program_name': program_name}
+            }
         if origin:
-            json_dict["query"]["origin"] = origin
-        query = post_nomad_request("/entries/query", json_dict=json_dict, use_prod=use_prod)
-        entries.extend([q["entry_id"] for q in query["data"]])
-        next_page_after_value = query["pagination"].get("next_page_after_value", None)
+            json_dict['query']['origin'] = origin
+        query = post_nomad_request(
+            '/entries/query', json_dict=json_dict, use_prod=use_prod
+        )
+        entries.extend([q['entry_id'] for q in query['data']])
+        next_page_after_value = query['pagination'].get('next_page_after_value', None)
         if next_page_after_value:
-            json_dict["pagination"]["page_after_value"] = next_page_after_value
+            json_dict['pagination']['page_after_value'] = next_page_after_value
         else:
             break
     if max_entries > 0:
@@ -263,15 +299,20 @@ def query_entries(
 
 
 def _get_raw_data_of_entry_by_id(
-    entry_id: str, use_prod: bool = False, timeout_in_sec: int = 10, with_authentication: bool = False
+    entry_id: str,
+    use_prod: bool = False,
+    timeout_in_sec: int = 10,
+    with_authentication: bool = False,
 ) -> ByteString:
-    logger.info(f"retrieving raw data of entry ID {entry_id} on {'prod' if use_prod else 'test'} server")
+    logger.info(
+        f"retrieving raw data of entry ID {entry_id} on {'prod' if use_prod else 'test'} server"
+    )
     response = get_nomad_request(
-        f"/entries/{entry_id}/raw?compress=true",
+        f'/entries/{entry_id}/raw?compress=true',
         with_authentication=with_authentication,
         use_prod=use_prod,
         timeout_in_sec=timeout_in_sec,
         return_json=False,
-        accept_field="application/zip",
+        accept_field='application/zip',
     )
     return response

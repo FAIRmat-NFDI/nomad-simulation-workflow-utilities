@@ -1,5 +1,5 @@
-# NOMAD-NetworkX
-Utility tool to map [NetworkX graph representations](https://networkx.org/documentation/stable/index.html) into [NOMAD workflow data models](https://github.com/nomad-coe/nomad-schema-plugin-simulation-workflow).
+# NOMAD-Simulation-Workflow-Utilities
+Utilities for interfacing with NOMAD within simulation workflows, including python API functions for uploading to NOMAD and querying the repository as well as automated generation of NOMAD custom workflow yaml file ([NOMAD workflow data models](https://github.com/nomad-coe/nomad-schema-plugin-simulation-workflow)).
 
 ## Getting started
 
@@ -7,8 +7,8 @@ Utility tool to map [NetworkX graph representations](https://networkx.org/docume
 
 Clone the repository and enter in the directory:
 ```sh
-git clone https://github.com/JosePizarro3/nomad-networkx.git
-cd nomad-networkx
+git clone https://github.com/FAIRmat-NFDI/nomad-simulation-workflow-utilities.git
+cd nomad-simulation-workflow-utilities
 ```
 
 Create a new virtual environment with Python 3.10 in the root folder of the project:
@@ -79,7 +79,7 @@ You can also create your own personal debugger `launch.json`. As an example, thi
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "nomad-networkx python",
+            "name": "nomad-simulation-workflow-utilities python",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/debug.py",
@@ -91,7 +91,7 @@ You can also create your own personal debugger `launch.json`. As an example, thi
             }
         },
         {
-            "name": "nomad-networkx pytest",
+            "name": "nomad-simulation-workflow-utilities pytest",
             "type": "debugpy",
             "request": "launch",
             "module": "pytest",

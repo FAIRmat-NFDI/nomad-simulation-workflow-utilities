@@ -5,8 +5,8 @@ from typing import Optional
 from marshmallow import Schema, pre_load
 from marshmallow_dataclass import class_schema, dataclass
 
-from nomad_networkx.users import NomadUser, get_user_by_id
-from nomad_networkx.utils import (
+from nomad_simulation_workflow_utilities.users import NomadUser, get_user_by_id
+from nomad_simulation_workflow_utilities.utils import (
     delete_nomad_request,
     get_nomad_request,
     post_nomad_request,
@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 class NomadDatasetSchema(Schema):
     @pre_load
     def convert_users(self, data, **kwargs):
-        data["user"] = get_user_by_id(user_id=data["user_id"]).as_dict()
-        del data["user_id"]
+        data['user'] = get_user_by_id(user_id=data['user_id']).as_dict()
+        del data['user_id']
         return data
 
 
@@ -46,62 +46,74 @@ def retrieve_datasets(
 ) -> list[NomadDataset]:
     parameters = []
     if dataset_id:
-        parameters.append(f"dataset_id={dataset_id}")
+        parameters.append(f'dataset_id={dataset_id}')
     if dataset_name:
-        parameters.append(f"dataset_name={dataset_name}")
+        parameters.append(f'dataset_name={dataset_name}')
     if user_id:
-        parameters.append(f"user_id={user_id}")
-    parameters.append(f"page_size={page_size}")
-    url_suffix = "/datasets/"
+        parameters.append(f'user_id={user_id}')
+    parameters.append(f'page_size={page_size}')
+    url_suffix = '/datasets/'
     if len(parameters) > 0:
-        url_suffix += f"?{parameters[0]}"
+        url_suffix += f'?{parameters[0]}'
     for i in range(1, len(parameters)):
-        url_suffix += f"&{parameters[i]}"
-    headers = {"Accept": "application/json"}
+        url_suffix += f'&{parameters[i]}'
+    headers = {'Accept': 'application/json'}
     nomad_entry_schema = class_schema(NomadDataset, base_schema=NomadDatasetSchema)
     datasets = []
     page_after_value = None
     while (max_datasets > 0 and len(datasets) <= max_datasets) or (max_datasets < 0):
-        url = f"{url_suffix}&page_after_value={page_after_value}" if page_after_value else url_suffix
+        url = (
+            f'{url_suffix}&page_after_value={page_after_value}'
+            if page_after_value
+            else url_suffix
+        )
         response = get_nomad_request(url, headers=headers, use_prod=use_prod)
-        if len(response["data"]) == 0:
+        if len(response['data']) == 0:
             break
-        datasets.extend([nomad_entry_schema().load(d) for d in response["data"]])
-        if response["pagination"]["page"] == response["pagination"]["total"]:
+        datasets.extend([nomad_entry_schema().load(d) for d in response['data']])
+        if response['pagination']['page'] == response['pagination']['total']:
             break
-        page_after_value = response["pagination"]["next_page_after_value"]
+        page_after_value = response['pagination']['next_page_after_value']
     return datasets
 
 
 def get_dataset_by_id(dataset_id: str, use_prod: bool = True) -> NomadDataset:
     datasets = retrieve_datasets(dataset_id=dataset_id, use_prod=use_prod)
     if len(datasets) != 1:
-        raise ValueError(f"Problem retrieving dataset {dataset_id}: {datasets}")
+        raise ValueError(f'Problem retrieving dataset {dataset_id}: {datasets}')
     return datasets[0]
 
 
-def create_dataset(dataset_name: str, use_prod: bool = False, timeout_in_sec: int = 10) -> str:
-    logger.info(f"creating dataset name {dataset_name} on {'prod' if use_prod else 'test'} server")
-    json_dict = {"dataset_name": dataset_name}
+def create_dataset(
+    dataset_name: str, use_prod: bool = False, timeout_in_sec: int = 10
+) -> str:
+    logger.info(
+        f"creating dataset name {dataset_name} on {'prod' if use_prod else 'test'} server"
+    )
+    json_dict = {'dataset_name': dataset_name}
     response = post_nomad_request(
-        "/datasets/",
+        '/datasets/',
         with_authentication=True,
         json_dict=json_dict,
         use_prod=use_prod,
         timeout_in_sec=timeout_in_sec,
     )
-    return response.get("dataset_id")
+    return response.get('dataset_id')
 
 
-def delete_dataset(dataset_id: str, use_prod: bool = False, timeout_in_sec: int = 10) -> None:
-    logger.info(f"deleting dataset {dataset_id} on {'prod' if use_prod else 'test'} server")
+def delete_dataset(
+    dataset_id: str, use_prod: bool = False, timeout_in_sec: int = 10
+) -> None:
+    logger.info(
+        f"deleting dataset {dataset_id} on {'prod' if use_prod else 'test'} server"
+    )
     response = delete_nomad_request(
-        f"/datasets/{dataset_id}",
+        f'/datasets/{dataset_id}',
         with_authentication=True,
         use_prod=use_prod,
         timeout_in_sec=timeout_in_sec,
     )
-    if response.get("dataset_id"):
-        logger.info(f"successfully deleted dataset {dataset_id}")
+    if response.get('dataset_id'):
+        logger.info(f'successfully deleted dataset {dataset_id}')
     else:
-        logger.error("no dataset deleted")
+        logger.error('no dataset deleted')

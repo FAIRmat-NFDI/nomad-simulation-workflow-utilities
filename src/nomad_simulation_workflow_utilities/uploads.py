@@ -6,8 +6,13 @@ from cachetools.func import ttl_cache
 from marshmallow import Schema, pre_load
 from marshmallow_dataclass import class_schema, dataclass
 
-from nomad_networkx.users import NomadUser, get_user_by_id
-from nomad_networkx.utils import delete_nomad_request, get_nomad_base_url, get_nomad_request, post_nomad_request
+from nomad_simulation_workflow_utilities.users import NomadUser, get_user_by_id
+from nomad_simulation_workflow_utilities.utils import (
+    delete_nomad_request,
+    get_nomad_base_url,
+    get_nomad_request,
+    post_nomad_request,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -15,10 +20,12 @@ logger = logging.getLogger(__name__)
 class NomadUploadSchema(Schema):
     @pre_load
     def convert_users(self, data, **kwargs):
-        data["main_author"] = get_user_by_id(user_id=data["main_author"]).as_dict()
-        data["writers"] = [get_user_by_id(user_id=w).as_dict() for w in data["writers"]]
-        data["reviewers"] = [get_user_by_id(user_id=r).as_dict() for r in data["reviewers"]]
-        data["viewers"] = [get_user_by_id(user_id=v).as_dict() for v in data["viewers"]]
+        data['main_author'] = get_user_by_id(user_id=data['main_author']).as_dict()
+        data['writers'] = [get_user_by_id(user_id=w).as_dict() for w in data['writers']]
+        data['reviewers'] = [
+            get_user_by_id(user_id=r).as_dict() for r in data['reviewers']
+        ]
+        data['viewers'] = [get_user_by_id(user_id=v).as_dict() for v in data['viewers']]
         return data
 
 
@@ -68,67 +75,86 @@ class NomadUpload:
     def nomad_gui_url(self) -> str:
         if self.base_url is None:
             raise ValueError(f"missing attribute 'use_prod' for upload {self}")
-        return f"{self.base_url}/gui/user/uploads/upload/id/{self.upload_id}"
+        return f'{self.base_url}/gui/user/uploads/upload/id/{self.upload_id}'
 
 
 @ttl_cache(maxsize=128, ttl=180)
-def get_all_my_uploads(use_prod: bool = False, timeout_in_sec: int = 10) -> list[NomadUpload]:
+def get_all_my_uploads(
+    use_prod: bool = False, timeout_in_sec: int = 10
+) -> list[NomadUpload]:
     logger.info(f"retrieving all uploads on {'prod' if use_prod else 'test'} server")
     response = get_nomad_request(
-        "/uploads",
+        '/uploads',
         use_prod=use_prod,
         with_authentication=True,
         timeout_in_sec=timeout_in_sec,
     )
     upload_class_schema = class_schema(NomadUpload, base_schema=NomadUploadSchema)
-    return [upload_class_schema().load({**r, "use_prod": use_prod}) for r in response["data"]]
+    return [
+        upload_class_schema().load({**r, 'use_prod': use_prod})
+        for r in response['data']
+    ]
 
 
-def get_upload_by_id(upload_id: str, use_prod: bool = False, timeout_in_sec: int = 10) -> NomadUpload:
-    logger.info(f"retrieving upload {upload_id} on {'prod' if use_prod else 'test'} server")
+def get_upload_by_id(
+    upload_id: str, use_prod: bool = False, timeout_in_sec: int = 10
+) -> NomadUpload:
+    logger.info(
+        f"retrieving upload {upload_id} on {'prod' if use_prod else 'test'} server"
+    )
     response = get_nomad_request(
-        f"/uploads/{upload_id}",
+        f'/uploads/{upload_id}',
         use_prod=use_prod,
         with_authentication=True,
         timeout_in_sec=timeout_in_sec,
     )
     upload_class_schema = class_schema(NomadUpload, base_schema=NomadUploadSchema)
-    return upload_class_schema().load({**response["data"], "use_prod": use_prod})
+    return upload_class_schema().load({**response['data'], 'use_prod': use_prod})
 
 
-def delete_upload(upload_id: str, use_prod: bool = False, timeout_in_sec: int = 10) -> NomadUpload:
-    logger.info(f"deleting upload {upload_id} on {'prod' if use_prod else 'test'} server")
+def delete_upload(
+    upload_id: str, use_prod: bool = False, timeout_in_sec: int = 10
+) -> NomadUpload:
+    logger.info(
+        f"deleting upload {upload_id} on {'prod' if use_prod else 'test'} server"
+    )
     response = delete_nomad_request(
-        f"/uploads/{upload_id}",
+        f'/uploads/{upload_id}',
         with_authentication=True,
         timeout_in_sec=timeout_in_sec,
     )
     upload_class_schema = class_schema(NomadUpload, base_schema=NomadUploadSchema)
-    return upload_class_schema().load({**response["data"], "use_prod": use_prod})
+    return upload_class_schema().load({**response['data'], 'use_prod': use_prod})
 
 
-def upload_files_to_nomad(filename: str, use_prod: bool = False, timeout_in_sec: int = 30) -> str:
+def upload_files_to_nomad(
+    filename: str, use_prod: bool = False, timeout_in_sec: int = 30
+) -> str:
     logger.info(f"uploading file {filename} on {'prod' if use_prod else 'test'} server")
-    with open(filename, "rb") as f:
+    with open(filename, 'rb') as f:
         response = post_nomad_request(
-            "/uploads",
+            '/uploads',
             with_authentication=True,
             data=f,
             use_prod=use_prod,
             timeout_in_sec=timeout_in_sec,
         )
-    upload_id = response.get("upload_id")
+    upload_id = response.get('upload_id')
     if upload_id:
-        logger.info(f"successful upload to {upload_id}")
+        logger.info(f'successful upload to {upload_id}')
         return upload_id
     else:
-        logger.error(f"could not upload {filename}. Response {response}")
+        logger.error(f'could not upload {filename}. Response {response}')
 
 
-def publish_upload(upload_id: str, use_prod: bool = False, timeout_in_sec: int = 10) -> dict:
-    logger.info(f"publishing upload {upload_id} on {'prod' if use_prod else 'test'} server")
+def publish_upload(
+    upload_id: str, use_prod: bool = False, timeout_in_sec: int = 10
+) -> dict:
+    logger.info(
+        f"publishing upload {upload_id} on {'prod' if use_prod else 'test'} server"
+    )
     response = post_nomad_request(
-        f"/uploads/{upload_id}/action/publish",
+        f'/uploads/{upload_id}/action/publish',
         with_authentication=True,
         timeout_in_sec=timeout_in_sec,
     )
@@ -146,22 +172,24 @@ def edit_upload_metadata(
     use_prod: bool = False,
     timeout_in_sec: int = 10,
 ) -> dict:
-    logger.info(f"editing the metadata for upload {upload_id} on {'prod' if use_prod else 'test'} server")
-    metadata = {"metadata": {}}
+    logger.info(
+        f"editing the metadata for upload {upload_id} on {'prod' if use_prod else 'test'} server"
+    )
+    metadata = {'metadata': {}}
     if upload_name:
-        metadata["metadata"]["upload_name"] = upload_name
+        metadata['metadata']['upload_name'] = upload_name
     if references:
-        metadata["metadata"]["references"] = references
+        metadata['metadata']['references'] = references
     if dataset_id:
-        metadata["metadata"]["datasets"] = dataset_id
+        metadata['metadata']['datasets'] = dataset_id
     if embargo_length:
-        metadata["metadata"]["embargo_length"] = embargo_length
+        metadata['metadata']['embargo_length'] = embargo_length
     if coauthors_ids:
-        metadata["metadata"]["coauthors"] = coauthors_ids
+        metadata['metadata']['coauthors'] = coauthors_ids
     if comment:
-        metadata["metadata"]["comment"] = comment
+        metadata['metadata']['comment'] = comment
     response = post_nomad_request(
-        f"/uploads/{upload_id}/edit",
+        f'/uploads/{upload_id}/edit',
         use_prod=use_prod,
         with_authentication=True,
         json_dict=metadata,
