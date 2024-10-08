@@ -1,0 +1,29 @@
+workflow2:
+  inputs:
+  - name: global workflow input
+    section: '#/run/0/method/0'
+  - name: input system node 0
+    section: '#/run/0/system/0'
+  outputs:
+  - name: global workflow output
+    section: '#/workflow2/0/results/0'
+  - name: output calculation node 1
+    section: '#/run/0/calculation/-1'
+  tasks:
+  - m_def: nomad.datamodel.metainfo.workflow.TaskReference
+    name: task 1
+    inputs:
+    - name: input system node 0
+      section: '#/run/0/system/0'
+    outputs:
+    - name: output calculation node 0
+      section: '#/run/0/calculation/-1'
+  - m_def: nomad.datamodel.metainfo.workflow.Workflow
+    name: task 2
+    task: '#/workflow2'
+    inputs:
+    - name: input system node 1
+      section: '#/run/0/system/-1'
+    outputs:
+    - name: output calculation node 1
+      section: '#/run/0/calculation/-1'
