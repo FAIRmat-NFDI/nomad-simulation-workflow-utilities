@@ -1,29 +1,40 @@
 workflow2:
   inputs:
   - name: global workflow input
-    section: '#/run/0/method/0'
-  - name: input system node 0
-    section: '#/run/0/system/0'
+    section: /uploads/<input_upload_id>/archive/mainfile/<input_mainfile>#/run/0/method/0
+  - name: input system from 0
+    section: ../upload/archive/mainfile/<task_1_mainfile>#/run/0/system/0
   outputs:
   - name: global workflow output
-    section: '#/workflow2/0/results/0'
-  - name: output calculation node 1
-    section: '#/run/0/calculation/-1'
+    section: ../upload/archive/mainfile/<output_mainfile>#/workflow2/results/-1
+  - name: output calculation from 1
+    section: ../upload/archive/mainfile/<task_1_mainfile>#/run/0/calculation/-1
+  - name: output calculation from 2
+    section: ../upload/archive/mainfile/<task_2_mainfile>#/run/0/calculation/-1
   tasks:
   - m_def: nomad.datamodel.metainfo.workflow.TaskReference
-    name: task 1
+    name: '1'
     inputs:
-    - name: input system node 0
-      section: '#/run/0/system/0'
+    - name: input system from 0
+      section: ../upload/archive/mainfile/<task_1_mainfile>#/run/0/system/0
     outputs:
-    - name: output calculation node 0
-      section: '#/run/0/calculation/-1'
+    - name: output calculation from 1
+      section: ../upload/archive/mainfile/<task_1_mainfile>#/run/0/calculation/-1
   - m_def: nomad.datamodel.metainfo.workflow.Workflow
-    name: task 2
-    task: '#/workflow2'
+    name: '2'
+    task: ../upload/archive/mainfile/<task_2_mainfile>#/workflow2
     inputs:
-    - name: input system node 1
-      section: '#/run/0/system/-1'
+    - name: input system from 1
+      section: ../upload/archive/mainfile/<task_1_mainfile>#/run/0/system/-1
     outputs:
-    - name: output calculation node 1
-      section: '#/run/0/calculation/-1'
+    - name: output calculation from 2
+      section: ../upload/archive/mainfile/<task_2_mainfile>#/run/0/calculation/-1
+  - m_def: nomad.datamodel.metainfo.workflow.Workflow
+    name: '3'
+    task: ../upload/archive/mainfile/<task_3_mainfile>#/workflow2
+    inputs:
+    - name: DEFAULT input system from 2
+      section: ../upload/archive/mainfile/<task_2_mainfile>#/run/-1/system/-1
+    outputs:
+    - name: DEFAULT output calculation from 3
+      section: ../upload/archive/mainfile/<task_3_mainfile>#/run/-1/calculation/-1
